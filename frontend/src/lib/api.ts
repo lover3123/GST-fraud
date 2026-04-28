@@ -1,4 +1,28 @@
-export type BatchStatus = "PENDING" | "COMPLETED" | "FAILED";
+import { getToken } from "./auth";
+
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+
+function authHeaders(): HeadersInit {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export async function apiLogin(username: string, password: string) {
+  const res = await fetch(`${BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? "Login failed");
+  }
+  return res.json();
+}
+
+// ── Invoices ──────────────────────────────────────────────────────────────────
 
 export interface InvoiceRecord {
   irn: string;
@@ -8,75 +32,84 @@ export interface InvoiceRecord {
   riskScore: number;
   aiExplanation: Record<string, number> | null;
   status: string;
+  batchId: string | null;
 }
 
 export interface BatchResponse {
   batch_id: string;
-  status: BatchStatus;
+  status: string;
 }
 
-type InvoiceApiRecord = {
-  irn: string;
-  vendor_gstin: string;
-  invoice_date: string;
-  taxable_value: number;
-  risk_score: number;
-  ai_explanation: Record<string, number> | null;
-  status: string;
-};
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
-
 export async function uploadBatch(files: File[]): Promise<BatchResponse> {
-  const formData = new FormData();
-  files.forEach((file) => formData.append("files", file));
-
-  const response = await fetch(`${API_BASE_URL}/api/v1/invoices/bulk-upload`, {
+  const form = new FormData();
+  files.forEach((f) => form.append("files", f));
+  const res = await fetch(`${BASE}/api/v1/invoices/bulk-upload`, {
     method: "POST",
-    body: formData,
+    headers: authHeaders(),
+    body: form,
   });
-
-  if (!response.ok) {
-    let message = "Upload failed";
-    try {
-      const payload = await response.json();
-      if (payload?.detail) {
-        message = typeof payload.detail === "string" ? payload.detail : JSON.stringify(payload.detail);
-      }
-    } catch {
-      // Keep the fallback error when the backend response is not JSON.
-    }
-    throw new Error(message);
-  }
-
-  return response.json();
+  if (!res.ok) throw new Error("Upload failed");
+  return res.json();
 }
 
 export async function fetchBatchStatus(batchId: string) {
-  const response = await fetch(`${API_BASE_URL}/api/v1/batches/${batchId}`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch batch status");
-  }
-  return response.json();
+  const res = await fetch(`${BASE}/api/v1/batches/${batchId}`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to fetch batch");
+  return res.json();
 }
 
-export async function fetchInvoices(batchId?: string) {
+export async function fetchInvoices(batchId?: string): Promise<{ items: InvoiceRecord[] }> {
   const url = batchId
-    ? `${API_BASE_URL}/api/v1/invoices?batch_id=${batchId}`
-    : `${API_BASE_URL}/api/v1/invoices`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Failed to fetch invoices");
-  }
-  const data = await response.json();
-  const items = (data.items || []).map((item: InvoiceApiRecord) => ({
-    irn: item.irn,
-    vendorGstin: item.vendor_gstin,
-    invoiceDate: item.invoice_date,
-    taxableValue: item.taxable_value,
-    riskScore: item.risk_score,
-    aiExplanation: item.ai_explanation,
-    status: item.status,
+    ? `${BASE}/api/v1/invoices?batch_id=${batchId}`
+    : `${BASE}/api/v1/invoices`;
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch invoices");
+  const raw = await res.json();
+  const items: InvoiceRecord[] = (raw.items ?? []).map((i: Record<string, unknown>) => ({
+    irn: i.irn,
+    vendorGstin: i.vendor_gstin,
+    invoiceDate: i.invoice_date,
+    taxableValue: i.taxable_value,
+    riskScore: i.risk_score,
+    aiExplanation: i.ai_explanation as Record<string, number> | null,
+    status: i.status,
+    batchId: i.batch_id,
   }));
   return { items };
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+export async function fetchDashboardStats() {
+  const res = await fetch(`${BASE}/api/v1/dashboard/stats`, { headers: authHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch stats");
+  return res.json();
+}
+
+// ── GSTIN ─────────────────────────────────────────────────────────────────────
+
+export interface GSTINResult {
+  gstin: string;
+  company_name: string;
+  state: string;
+  annual_sales: number;
+  annual_purchases: number;
+  itc_claimed: number;
+  refund_claimed: number;
+  risk_score: number;
+  risk_label: string;
+  flags: string[];
+}
+
+export async function lookupGSTIN(gstin: string): Promise<GSTINResult> {
+  const res = await fetch(`${BASE}/api/v1/gstin/lookup?gstin=${encodeURIComponent(gstin)}`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? "Lookup failed");
+  }
+  return res.json();
 }

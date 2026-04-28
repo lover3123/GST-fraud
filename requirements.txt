@@ -7,3 +7,6 @@ redis==5.0.8
 celery==5.4.0
 pandas==2.2.3
 pdfplumber==0.11.4
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.12
