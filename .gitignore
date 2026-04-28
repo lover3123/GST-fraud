@@ -8,4 +8,5 @@ frontend/.next/
 frontend/.turbo/
 frontend/.env.local
 frontend/.env.*.local
+*.tsbuildinfo
 .DS_Store
