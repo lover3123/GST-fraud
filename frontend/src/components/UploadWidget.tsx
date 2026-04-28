@@ -75,10 +75,12 @@ export default function UploadWidget({ onUploadComplete }: UploadWidgetProps) {
   }, [batch, state, onUploadComplete]);
 
   return (
-    <section className="flex w-full items-center justify-center">
+    <section className="w-full">
       <div
-        className={`glass-panel flex w-full max-w-3xl flex-col gap-6 rounded-[28px] px-10 py-12 shadow-float transition ${
-          dragActive ? "border-ink-900" : "border-transparent"
+        className={`flex w-full flex-col gap-4 rounded-2xl border bg-slate-900 p-6 transition ${
+          dragActive
+            ? "border-indigo-500 bg-indigo-500/5"
+            : "border-slate-800"
         }`}
         onDragOver={(event) => {
           event.preventDefault();
@@ -92,21 +94,27 @@ export default function UploadWidget({ onUploadComplete }: UploadWidgetProps) {
         }}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-sm text-ink-700">
-            <CloudArrowUp size={20} />
+          <div className="flex items-center gap-2 text-xs text-slate-500 uppercase tracking-widest">
+            <CloudArrowUp size={16} />
             <span>PDF or CSV only</span>
           </div>
           {files.length ? (
             <button
-              className="rounded-full bg-ink-900 px-5 py-2 text-sm font-medium text-white"
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 transition"
               onClick={handleUpload}
             >
-              Upload {files.length} files
+              Upload {files.length} file{files.length > 1 ? "s" : ""}
             </button>
           ) : null}
         </div>
 
-        <label className="flex cursor-pointer flex-col gap-2 rounded-3xl border border-dashed border-ink-700/20 bg-white px-8 py-12 text-center">
+        <label
+          className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed px-8 py-10 text-center transition ${
+            dragActive
+              ? "border-indigo-500 bg-indigo-500/5"
+              : "border-slate-700 hover:border-slate-500"
+          }`}
+        >
           <input
             type="file"
             multiple
@@ -114,22 +122,44 @@ export default function UploadWidget({ onUploadComplete }: UploadWidgetProps) {
             className="hidden"
             onChange={(event) => handleFiles(event.target.files)}
           />
-          <span className="text-2xl font-semibold text-ink-900">{label}</span>
-          <span className="text-sm text-ink-700">Drop files here or click to browse.</span>
+          <CloudArrowUp
+            size={32}
+            className={dragActive ? "text-indigo-400" : "text-slate-500"}
+            weight="duotone"
+          />
+          <span className="text-base font-semibold text-white">{label}</span>
+          <span className="text-sm text-slate-500">
+            Drop files here or click to browse.
+          </span>
+          {files.length > 0 && (
+            <span className="mt-1 text-xs text-indigo-400">
+              {files.length} file{files.length > 1 ? "s" : ""} ready — click Upload above
+            </span>
+          )}
         </label>
 
         {state === "processing" ? (
-          <div className="flex items-center gap-3 rounded-2xl bg-white px-6 py-4">
-            <div className="pulse-skeleton h-10 w-10 rounded-full" />
+          <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-800/50 px-5 py-4">
+            <div className="h-8 w-8 animate-pulse rounded-full bg-slate-700" />
             <div className="flex flex-1 flex-col gap-2">
-              <div className="pulse-skeleton h-3 w-2/3 rounded-full" />
-              <div className="pulse-skeleton h-3 w-1/3 rounded-full" />
+              <div className="h-2.5 w-2/3 animate-pulse rounded-full bg-slate-700" />
+              <div className="h-2.5 w-1/3 animate-pulse rounded-full bg-slate-700" />
             </div>
-            <Hourglass size={20} className="text-ink-700" />
+            <Hourglass size={18} className="text-slate-400" />
           </div>
         ) : null}
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {state === "completed" ? (
+          <div className="rounded-xl border border-emerald-800 bg-emerald-500/10 px-5 py-3 text-sm text-emerald-400">
+            ✓ Batch processed successfully
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="rounded-xl border border-red-800 bg-red-500/10 px-5 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        ) : null}
       </div>
     </section>
   );
