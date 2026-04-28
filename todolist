@@ -1,0 +1,49 @@
+# GST Fraud Detection Project - 
+
+## Authentication & User Management
+- [ ] Implement JWT-based authentication in FastAPI backend
+- [ ] Add user model with roles (Senior Officer, Inspection Officer, Tax Officer)
+- [ ] Create login/logout endpoints with password hashing
+- [ ] Add authentication middleware for protected routes
+- [ ] Update frontend to include login page and session management
+- [ ] Implement role-based access control for different user types
+
+## Dashboard Enhancements
+- [ ] Add dashboard statistics API endpoint (fraud prevented, invoices scanned, accuracy, threats detected)
+- [ ] Create analytics endpoint with daily threat trends and invoice status breakdowns
+- [ ] Update Dashboard component to display real-time statistics
+- [ ] Add charts/visualizations for analytics data
+- [ ] Implement active users tracking
+
+## GSTIN Lookup Feature
+- [ ] Create GSTIN validation API endpoint
+- [ ] Add GSTIN database/model for company information
+- [ ] Implement risk scoring based on financial ratios
+- [ ] Build GSTIN lookup frontend component
+- [ ] Add GSTIN search functionality to existing invoice processing
+
+## Additional Frontend Pages
+- [ ] Create Analytics page with threat trend charts
+- [ ] Build Fraud Alerts page for displaying detected cases
+- [ ] Add Case Assignments page for officer task management
+- [ ] Enhance Invoices view with detailed filtering and status tracking
+- [ ] Implement GSTIN lookup interface
+
+## Data Integration
+- [ ] Import GSTIN company data into database
+- [ ] Add sample GST data for testing
+- [ ] Update existing models to include GSTIN references
+- [ ] Integrate risk scores with ML predictions
+
+## Security & Validation
+- [ ] Add input validation for all new endpoints
+- [ ] Implement rate limiting for API calls
+- [ ] Add CORS configuration for frontend integration
+- [ ] Update error handling for authentication failures
+
+## Testing & Deployment
+- [ ] Write unit tests for new authentication features
+- [ ] Test GSTIN lookup functionality
+- [ ] Update frontend tests for new components
+- [ ] Add integration tests for dashboard statistics
+- [ ] Update documentation for new features
