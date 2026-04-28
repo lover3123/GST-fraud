@@ -14,61 +14,38 @@ from app.models.batch import Batch
 from app.models.enums import InvoiceStatus
 from app.models.invoice import Invoice
 from app.models.vendor import Vendor
-from app.utils.ml import mock_anomaly_score
 from app.utils.rules import find_duplicate_irns, is_valid_gstin
-
+from app.utils.ingestion import map_messy_headers
+from app.core.analyzer import BehavioralAnalyzer
 
 logger = get_task_logger(__name__)
-
 
 def _is_missing(value) -> bool:
     return value is None or pd.isna(value)
 
-
-def _pick_first(row: dict, *keys: str):
-    for key in keys:
-        if key in row and not _is_missing(row[key]):
-            return row[key]
-    return None
-
-
 def _parse_csv(path: str) -> list[dict]:
     df = pd.read_csv(path)
+    mapping = map_messy_headers(df.columns.tolist())
+    
     records: list[dict] = []
     for row in df.to_dict(orient="records"):
-        irn = _pick_first(row, "irn", "IRN", "invoice_id", "Invoice_ID", "invoice_number", "Invoice_Number")
-        vendor_gstin = _pick_first(
-            row,
-            "vendor_gstin",
-            "Vendor_GSTIN",
-            "vendorGSTIN",
-            "supplier_gstin",
-            "Supplier_GSTIN",
-            "GSTIN_Supplier",
-        )
-        invoice_date = _pick_first(
-            row,
-            "invoice_date",
-            "Invoice_Date",
-            "invoiceDate",
-            "date",
-            "Date",
-        )
-        taxable_value = _pick_first(
-            row,
-            "taxable_value",
-            "Taxable_Value",
-            "taxableAmount",
-            "invoice_amount",
-            "Invoice_Amount",
-            "total_amount",
-            "Total_Amount",
-        )
+        canonical_row = {}
+        for uploaded_col, can_col in mapping.items():
+            if can_col:
+                canonical_row[can_col] = row.get(uploaded_col)
+                
+        irn = canonical_row.get("irn")
+        vendor_gstin = canonical_row.get("vendor_gstin")
+        invoice_date = canonical_row.get("invoice_date")
+        taxable_value = canonical_row.get("taxable_value")
+        hsn_code = canonical_row.get("hsn_code")
+        
         record = {
             "irn": str(irn or "").strip(),
             "vendor_gstin": str(vendor_gstin or "").strip().upper(),
             "invoice_date": invoice_date,
             "taxable_value": float(taxable_value or 0.0),
+            "hsn_code": str(hsn_code or "").strip() if not _is_missing(hsn_code) else None
         }
         records.append(record)
     return records
@@ -83,6 +60,7 @@ def _parse_pdf(path: str) -> list[dict]:
         "vendor_gstin": "29ABCDE1234F1Z5",
         "invoice_date": date.today(),
         "taxable_value": 0.0,
+        "hsn_code": "9983"
     }
     records.append(record)
     return records
@@ -110,18 +88,11 @@ def process_batch(batch_id: str, file_paths: list[str]) -> None:
         records: list[dict] = []
         for path in file_paths:
             ext = os.path.splitext(path)[1].lower()
-            logger.info("Parsing file %s with extension %s", path, ext)
             if ext == ".csv":
-                csv_records = _parse_csv(path)
-                logger.info("Parsed %d records from CSV", len(csv_records))
-                records.extend(csv_records)
+                records.extend(_parse_csv(path))
             elif ext == ".pdf":
-                pdf_records = _parse_pdf(path)
-                logger.info("Parsed %d records from PDF", len(pdf_records))
-                records.extend(pdf_records)
+                records.extend(_parse_pdf(path))
         
-        logger.info("Total records parsed: %d", len(records))
-
         irns = [r["irn"] for r in records if r.get("irn")]
         duplicate_irns = find_duplicate_irns(irns)
 
@@ -141,26 +112,42 @@ def process_batch(batch_id: str, file_paths: list[str]) -> None:
             db.add(Vendor(gstin=gstin, legal_name="Unknown", aggregated_risk_score=0.0))
         db.flush()
 
+        analyzer = BehavioralAnalyzer(db)
         invoices_added = 0
+        
         for record in records:
             irn = record.get("irn") or f"IRN-{uuid.uuid4().hex[:16]}"
             vendor_gstin = (record.get("vendor_gstin") or "").upper()
             invoice_date = _normalize_date(record.get("invoice_date"))
             taxable_value = float(record.get("taxable_value") or 0.0)
+            hsn_code = record.get("hsn_code")
 
             rule_flags = []
             if irn in duplicate_irns or irn in existing_irns:
-                rule_flags.append("duplicate_irn")
+                rule_flags.append("Duplicate IRN")
             if not is_valid_gstin(vendor_gstin):
-                rule_flags.append("invalid_gstin")
+                rule_flags.append("Invalid GSTIN")
 
-            score, explanation = mock_anomaly_score()
+            mock_invoice = Invoice(
+                irn=irn,
+                vendor_gstin=vendor_gstin,
+                invoice_date=invoice_date,
+                taxable_value=taxable_value,
+                hsn_code=hsn_code
+            )
+            
+            verdict = analyzer.run_all_checks(mock_invoice)
+            score = verdict["risk_score"]
+            explanation = verdict["ai_explanation"]
+
             if rule_flags:
-                explanation = {"rules": rule_flags, **explanation}
+                explanation.insert(0, f"Rules Failed: {', '.join(rule_flags)}")
 
             status = InvoiceStatus.CLEAN
             if rule_flags or score >= 0.7:
                 status = InvoiceStatus.FLAGGED
+            if score >= 0.9:
+                status = "REJECTED"
 
             if irn not in existing_irns:
                 invoice = Invoice(
@@ -170,6 +157,7 @@ def process_batch(batch_id: str, file_paths: list[str]) -> None:
                     batch_id=batch_id,
                     invoice_date=invoice_date,
                     taxable_value=taxable_value,
+                    hsn_code=hsn_code,
                     risk_score=score,
                     ai_explanation=explanation,
                     status=status,
@@ -178,11 +166,9 @@ def process_batch(batch_id: str, file_paths: list[str]) -> None:
                 existing_irns.add(irn)
                 invoices_added += 1
 
-        logger.info("Added %d invoices to batch %s", invoices_added, batch_id)
         batch.status = "COMPLETED"
         batch.completed_at = datetime.utcnow()
         db.commit()
-        logger.info("Batch %s completed successfully", batch_id)
     except Exception:
         db.rollback()
         batch = db.get(Batch, batch_id)
@@ -190,7 +176,6 @@ def process_batch(batch_id: str, file_paths: list[str]) -> None:
             batch.status = "FAILED"
             batch.completed_at = datetime.utcnow()
             db.commit()
-        logger.exception("Batch processing failed: %s", batch_id)
         raise
     finally:
         db.close()

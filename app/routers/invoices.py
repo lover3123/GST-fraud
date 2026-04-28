@@ -117,3 +117,41 @@ def list_invoices(batch_id: str | None = None) -> dict:
         return {"items": items}
     finally:
         db.close()
+
+
+from app.schemas.invoice import InvoiceDetectRequest, InvoiceDetectResponse
+from app.core.analyzer import BehavioralAnalyzer
+from datetime import datetime
+
+@router.post("/detect", response_model=InvoiceDetectResponse)
+def detect_fraud(payload: InvoiceDetectRequest):
+    """
+    Real-Time Detection API:
+    Instantly scores an invoice without saving it to a batch.
+    """
+    db = SessionLocal()
+    try:
+        # Create a mock Invoice object to pass into the Analyzer
+        # It won't be saved unless we commit, which we don't.
+        mock_invoice = Invoice(
+            irn=payload.irn,
+            vendor_gstin=payload.vendor_gstin,
+            invoice_date=payload.invoice_date,
+            taxable_value=payload.taxable_value,
+            hsn_code=payload.hsn_code
+        )
+        
+        analyzer = BehavioralAnalyzer(db)
+        verdict = analyzer.run_all_checks(mock_invoice)
+        
+        return InvoiceDetectResponse(
+            irn=payload.irn,
+            status=verdict["status"],
+            risk_score=verdict["risk_score"],
+            ai_explanation=verdict["ai_explanation"]
+        )
+    except Exception as e:
+        logger.error(f"Detection failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()

@@ -29,8 +29,9 @@ export interface InvoiceRecord {
   vendorGstin: string;
   invoiceDate: string;
   taxableValue: number;
+  hsnCode: string | null;
   riskScore: number;
-  aiExplanation: Record<string, number> | null;
+  aiExplanation: string[] | null;
   status: string;
   batchId: string | null;
 }
@@ -68,14 +69,15 @@ export async function fetchInvoices(batchId?: string): Promise<{ items: InvoiceR
   if (!res.ok) throw new Error("Failed to fetch invoices");
   const raw = await res.json();
   const items: InvoiceRecord[] = (raw.items ?? []).map((i: Record<string, unknown>) => ({
-    irn: i.irn,
-    vendorGstin: i.vendor_gstin,
-    invoiceDate: i.invoice_date,
-    taxableValue: i.taxable_value,
-    riskScore: i.risk_score,
-    aiExplanation: i.ai_explanation as Record<string, number> | null,
-    status: i.status,
-    batchId: i.batch_id,
+    irn: i.irn as string,
+    vendorGstin: i.vendor_gstin as string,
+    invoiceDate: i.invoice_date as string,
+    taxableValue: i.taxable_value as number,
+    hsnCode: i.hsn_code as string | null,
+    riskScore: i.risk_score as number,
+    aiExplanation: i.ai_explanation as string[] | null,
+    status: i.status as string,
+    batchId: i.batch_id as string | null,
   }));
   return { items };
 }

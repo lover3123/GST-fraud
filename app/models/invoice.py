@@ -16,6 +16,7 @@ class Invoice(Base):
     batch_id: Mapped[str | None] = mapped_column(ForeignKey("batches.id"), nullable=True, index=True)
     invoice_date: Mapped[date] = mapped_column(Date, nullable=False)
     taxable_value: Mapped[float] = mapped_column(Float, nullable=False)
+    hsn_code: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     risk_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     ai_explanation: Mapped[dict] = mapped_column(JSON, nullable=True)
     status: Mapped[InvoiceStatus] = mapped_column(String(20), nullable=False, default=InvoiceStatus.PENDING)

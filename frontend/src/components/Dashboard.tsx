@@ -44,19 +44,21 @@ export default function Dashboard() {
                 <th className="px-6 py-4">IRN</th>
                 <th className="px-6 py-4">Vendor</th>
                 <th className="px-6 py-4">Invoice Date</th>
+                <th className="px-6 py-4">HSN/SAC</th>
                 <th className="px-6 py-4 text-right">Taxable Value</th>
                 <th className="px-6 py-4 text-right">Risk</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={5} className="px-6 py-8 text-sm text-slate-500 animate-pulse">Loading invoices…</td></tr>
+                <tr><td colSpan={6} className="px-6 py-8 text-sm text-slate-500 animate-pulse">Loading invoices…</td></tr>
               ) : rows.length ? (
                 rows.slice(0, 50).map((row) => (
                   <tr key={row.irn} className="border-t border-slate-800 hover:bg-slate-800/40 transition">
                     <td className="px-6 py-4 font-mono text-xs text-slate-300">{row.irn}</td>
                     <td className="px-6 py-4 text-slate-300">{row.vendorGstin}</td>
                     <td className="px-6 py-4 text-slate-400">{row.invoiceDate}</td>
+                    <td className="px-6 py-4 text-slate-400">{row.hsnCode || "-"}</td>
                     <td className="px-6 py-4 text-right text-white">₹{row.taxableValue.toLocaleString("en-IN")}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-3">
@@ -67,7 +69,7 @@ export default function Dashboard() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={5} className="px-6 py-8 text-sm text-slate-500">No invoices processed yet.</td></tr>
+                <tr><td colSpan={6} className="px-6 py-8 text-sm text-slate-500">No invoices processed yet.</td></tr>
               )}
             </tbody>
           </table>
