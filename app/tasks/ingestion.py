@@ -106,13 +106,21 @@ def process_batch(batch_id: str, file_paths: list[str]) -> None:
             logger.error("Batch not found: %s", batch_id)
             return
 
+        logger.info("Processing batch %s with files: %s", batch_id, file_paths)
         records: list[dict] = []
         for path in file_paths:
             ext = os.path.splitext(path)[1].lower()
+            logger.info("Parsing file %s with extension %s", path, ext)
             if ext == ".csv":
-                records.extend(_parse_csv(path))
+                csv_records = _parse_csv(path)
+                logger.info("Parsed %d records from CSV", len(csv_records))
+                records.extend(csv_records)
             elif ext == ".pdf":
-                records.extend(_parse_pdf(path))
+                pdf_records = _parse_pdf(path)
+                logger.info("Parsed %d records from PDF", len(pdf_records))
+                records.extend(pdf_records)
+        
+        logger.info("Total records parsed: %d", len(records))
 
         irns = [r["irn"] for r in records if r.get("irn")]
         duplicate_irns = find_duplicate_irns(irns)
@@ -133,6 +141,7 @@ def process_batch(batch_id: str, file_paths: list[str]) -> None:
             db.add(Vendor(gstin=gstin, legal_name="Unknown", aggregated_risk_score=0.0))
         db.flush()
 
+        invoices_added = 0
         for record in records:
             irn = record.get("irn") or f"IRN-{uuid.uuid4().hex[:16]}"
             vendor_gstin = (record.get("vendor_gstin") or "").upper()
@@ -167,10 +176,13 @@ def process_batch(batch_id: str, file_paths: list[str]) -> None:
                 )
                 db.add(invoice)
                 existing_irns.add(irn)
+                invoices_added += 1
 
+        logger.info("Added %d invoices to batch %s", invoices_added, batch_id)
         batch.status = "COMPLETED"
         batch.completed_at = datetime.utcnow()
         db.commit()
+        logger.info("Batch %s completed successfully", batch_id)
     except Exception:
         db.rollback()
         batch = db.get(Batch, batch_id)

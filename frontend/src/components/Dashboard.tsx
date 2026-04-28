@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import RiskBadge from "@/components/RiskBadge";
 import XaiTooltip from "@/components/XaiTooltip";
+import UploadWidget from "@/components/UploadWidget";
 import { fetchInvoices, InvoiceRecord } from "@/lib/api";
 
 type InvoiceRow = InvoiceRecord;
@@ -12,22 +13,26 @@ export default function Dashboard() {
   const [rows, setRows] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await fetchInvoices();
-        setRows(data.items || []);
-      } catch {
-        setRows([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+  const loadInvoices = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchInvoices();
+      setRows(data.items || []);
+    } catch {
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
+
   return (
-    <section className="rounded-[28px] bg-white px-10 py-12 shadow-subtle">
+    <>
+      <UploadWidget onUploadComplete={loadInvoices} />
+      <section className="rounded-[28px] bg-white px-10 py-12 shadow-subtle">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-ink-700">Supplier risk</p>
@@ -85,5 +90,6 @@ export default function Dashboard() {
         </div>
       </div>
     </section>
+    </>
   );
 }

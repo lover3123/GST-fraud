@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 import uuid
@@ -13,6 +14,7 @@ from app.models.invoice import Invoice
 from app.tasks.ingestion import process_batch
 
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -55,13 +57,15 @@ def bulk_upload(files: list[UploadFile] = File(...)) -> dict:
         try:
             process_batch.delay(batch_id, file_paths)
             return {"batch_id": batch_id, "status": "PENDING"}
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Failed to queue task, falling back to sync: %s", e)
 
     try:
+        # Call synchronously when Redis is not available
         process_batch(batch_id, file_paths)
         return {"batch_id": batch_id, "status": "COMPLETED"}
     except Exception as exc:
+        logger.error("Batch processing failed: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 

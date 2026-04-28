@@ -7,7 +7,11 @@ import { BatchResponse, fetchBatchStatus, uploadBatch } from "@/lib/api";
 
 type UploadState = "idle" | "uploading" | "processing" | "completed" | "error";
 
-export default function UploadWidget() {
+interface UploadWidgetProps {
+  onUploadComplete?: () => void;
+}
+
+export default function UploadWidget({ onUploadComplete }: UploadWidgetProps) {
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [state, setState] = useState<UploadState>("idle");
@@ -52,6 +56,14 @@ export default function UploadWidget() {
         const data = await fetchBatchStatus(batch.batch_id);
         if (data.status === "COMPLETED") {
           setState("completed");
+          // Trigger refetch of invoices after batch completes
+          onUploadComplete?.();
+          // Reset after a short delay
+          setTimeout(() => {
+            setState("idle");
+            setBatch(null);
+            setFiles([]);
+          }, 2000);
         } else {
           setState("processing");
         }
@@ -60,7 +72,7 @@ export default function UploadWidget() {
       }
     }, 2000);
     return () => window.clearTimeout(timer);
-  }, [batch, state]);
+  }, [batch, state, onUploadComplete]);
 
   return (
     <section className="flex w-full items-center justify-center">
