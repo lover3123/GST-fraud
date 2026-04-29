@@ -44,9 +44,9 @@ export default function HomePage() {
   if (!isLoggedIn()) return null;
 
   return (
-    <div className="flex min-h-screen bg-[#060b14]">
+    <div className="min-h-screen bg-[#060b14]">
       <Navbar />
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="pt-14 overflow-y-auto p-8">
         <div className="mb-8">
           <p className="text-xs uppercase tracking-widest text-slate-500">Overview</p>
           <h1 className="mt-1 text-2xl font-bold text-white">Command Dashboard</h1>
