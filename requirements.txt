@@ -12,3 +12,4 @@ passlib[bcrypt]==1.7.4
 python-multipart==0.0.12
 numpy>=1.26.0
 scipy>=1.11.0
+networkx>=3.2.0

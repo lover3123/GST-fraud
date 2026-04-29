@@ -3,6 +3,8 @@ from sqlalchemy import select, func, and_
 from app.models.invoice import Invoice
 from app.core.statistics import check_benford_compliance
 from app.core.behavioral import analyze_vendor_velocity, detect_structuring_attempts
+from app.core.network import detect_circular_trading
+from app.core.syndicate import detect_cross_entity_syndicate
 
 class BehavioralAnalyzer:
     def __init__(self, db_session: Session):
@@ -124,6 +126,18 @@ class BehavioralAnalyzer:
              
         return (False, 0.0, "No threshold clustering detected.")
 
+    def check_circular_trading(self, current_invoice: Invoice) -> tuple[bool, float, str]:
+        """
+        Prompt 3.5: Network — Circular billing loop detection (A→B→C→A).
+        """
+        return detect_circular_trading(current_invoice, self.db)
+
+    def check_syndicate(self, current_invoice: Invoice) -> tuple[bool, float, str]:
+        """
+        Prompt 3.6: Syndicate — Cross-GSTIN value clustering across different vendors.
+        """
+        return detect_cross_entity_syndicate(current_invoice, self.db)
+
     def run_all_checks(self, current_invoice: Invoice) -> dict:
         """
         Runs all checks and aggregates the results into a final verdict.
@@ -132,7 +146,9 @@ class BehavioralAnalyzer:
             "benford": self.check_benford(current_invoice),
             "dormancy": self.check_dormancy(current_invoice),
             "hsn_consistency": self.check_hsn_consistency(current_invoice),
-            "clustering": self.check_clustering(current_invoice)
+            "clustering": self.check_clustering(current_invoice),
+            "circular_trading": self.check_circular_trading(current_invoice),
+            "syndicate": self.check_syndicate(current_invoice),
         }
         
         explanations = []
