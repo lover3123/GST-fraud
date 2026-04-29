@@ -9,6 +9,7 @@ from app.routers.dashboard import router as dashboard_router
 from app.routers.gstin import router as gstin_router
 from app.routers.health import router as health_router
 from app.routers.invoices import router as invoices_router
+from app.routers.admin import router as admin_router
 from app import models  # noqa: F401
 
 
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
     app.include_router(invoices_router, prefix="/api/v1", tags=["invoices"])
     app.include_router(dashboard_router, prefix="/api/v1", tags=["dashboard"])
     app.include_router(gstin_router, prefix="/api/v1", tags=["gstin"])
+    app.include_router(admin_router, prefix="/api/v1", tags=["admin"])
 
     @app.on_event("startup")
     def on_startup() -> None:

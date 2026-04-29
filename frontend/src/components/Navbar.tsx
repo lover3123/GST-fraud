@@ -11,6 +11,7 @@ import {
   Briefcase,
   Invoice,
   Shield,
+  Key,
 } from "@phosphor-icons/react/dist/ssr";
 import { clearSession, getUser, ROLE_LABELS } from "@/lib/auth";
 
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/invoices", label: "Invoices", icon: Invoice },
   { href: "/gstin", label: "GSTIN Lookup", icon: MagnifyingGlass },
   { href: "/cases", label: "Case Assignments", icon: Briefcase },
+  { href: "/api-keys", label: "API Keys", icon: Key },
 ];
 
 export default function Navbar() {
