@@ -1,0 +1,39 @@
+services:
+  # FastAPI Backend
+  - type: web
+    name: gst-guardian-api
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: gst-guardian-redis
+          property: connectionString
+      - key: DATABASE_URL
+        value: sqlite:///./gst_guardian.db # Update to PostgreSQL for production
+
+  # Celery Worker
+  - type: worker
+    name: gst-guardian-celery
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A app.core.celery_app worker --loglevel=info"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: gst-guardian-redis
+          property: connectionString
+      - key: DATABASE_URL
+        value: sqlite:///./gst_guardian.db # Must match web service DB
+
+  # Redis Broker
+  - type: redis
+    name: gst-guardian-redis
+    ipAllowList: [] # Allows internal connections
