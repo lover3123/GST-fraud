@@ -78,7 +78,7 @@ export default function ApiKeysPage() {
   return (
     <div className="flex min-h-screen bg-[#060b14]">
       <Navbar />
-      <main className="flex-1 overflow-y-auto bg-slate-950 text-white p-8">
+      <main className="overflow-y-auto bg-slate-950 text-white flex-1 p-8 pt-20">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Header */}
         <div>

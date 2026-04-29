@@ -30,6 +30,13 @@ export default function GSTINPage() {
 
   useEffect(() => {
     setMounted(true);
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    if (q) {
+      setQuery(q);
+      setTimeout(() => handleLookup(q), 10);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { if (!isLoggedIn()) router.replace("/login"); }, [router]);
@@ -53,7 +60,7 @@ export default function GSTINPage() {
   return (
     <div className="flex min-h-screen bg-[#060b14]">
       <Navbar />
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="overflow-y-auto flex-1 p-8 pt-20">
         <p className="text-xs uppercase tracking-widest text-slate-500">Verification</p>
         <h1 className="mt-1 mb-8 text-2xl font-bold text-white">GSTIN Lookup</h1>
 

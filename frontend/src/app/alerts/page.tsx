@@ -34,7 +34,7 @@ export default function AlertsPage() {
   return (
     <div className="flex min-h-screen bg-[#060b14]">
       <Navbar />
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="overflow-y-auto flex-1 p-8 pt-20">
         <p className="text-xs uppercase tracking-widest text-slate-500">Security</p>
         <h1 className="mt-1 mb-2 text-2xl font-bold text-white">Fraud Alerts</h1>
         <p className="mb-8 text-sm text-slate-400">{alerts.length} flagged invoice{alerts.length !== 1 ? "s" : ""} detected</p>

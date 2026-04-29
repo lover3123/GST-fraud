@@ -20,6 +20,9 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     setMounted(true);
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    if (q) setSearch(q);
   }, []);
 
   useEffect(() => { if (!isLoggedIn()) router.replace("/login"); }, [router]);
@@ -47,7 +50,7 @@ export default function InvoicesPage() {
   return (
     <div className="flex min-h-screen bg-[#060b14]">
       <Navbar />
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="overflow-y-auto flex-1 p-8 pt-20">
         <p className="text-xs uppercase tracking-widest text-slate-500">Records</p>
         <h1 className="mt-1 mb-6 text-2xl font-bold text-white">Invoices</h1>
 
