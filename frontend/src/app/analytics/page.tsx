@@ -14,6 +14,12 @@ export default function AnalyticsPage() {
   const [stats, setStats] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => { if (!isLoggedIn()) router.replace("/login"); }, [router]);
 
   useEffect(() => {
@@ -25,6 +31,7 @@ export default function AnalyticsPage() {
 
   const maxTotal = Math.max(...trends.map((t) => t.total), 1);
 
+  if (!mounted) return null;
   if (!isLoggedIn()) return null;
 
   return (

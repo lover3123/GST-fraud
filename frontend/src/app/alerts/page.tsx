@@ -11,6 +11,12 @@ export default function AlertsPage() {
   const [alerts, setAlerts] = useState<InvoiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => { if (!isLoggedIn()) router.replace("/login"); }, [router]);
 
   useEffect(() => {
@@ -19,6 +25,7 @@ export default function AlertsPage() {
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
+  if (!mounted) return null;
   if (!isLoggedIn()) return null;
 
   const severityColor = (score: number) => score >= 0.7 ? "text-red-400 bg-red-500/10 border-red-500/30" : score >= 0.4 ? "text-amber-400 bg-amber-500/10 border-amber-500/30" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/30";

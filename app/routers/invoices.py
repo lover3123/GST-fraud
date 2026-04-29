@@ -107,6 +107,7 @@ def list_invoices(batch_id: str | None = None) -> dict:
                 "vendor_gstin": invoice.vendor_gstin,
                 "invoice_date": invoice.invoice_date.isoformat(),
                 "taxable_value": invoice.taxable_value,
+                "hsn_code": invoice.hsn_code,
                 "risk_score": invoice.risk_score,
                 "ai_explanation": invoice.ai_explanation,
                 "status": invoice.status,

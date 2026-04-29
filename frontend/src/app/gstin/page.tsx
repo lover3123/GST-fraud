@@ -26,6 +26,11 @@ export default function GSTINPage() {
   const [result, setResult] = useState<GSTINResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => { if (!isLoggedIn()) router.replace("/login"); }, [router]);
 
@@ -42,6 +47,7 @@ export default function GSTINPage() {
     }
   }
 
+  if (!mounted) return null;
   if (!isLoggedIn()) return null;
 
   return (

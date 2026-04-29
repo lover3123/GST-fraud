@@ -16,6 +16,11 @@ export default function InvoicesPage() {
   const [filter, setFilter] = useState<StatusFilter>("ALL");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => { if (!isLoggedIn()) router.replace("/login"); }, [router]);
 
@@ -36,6 +41,7 @@ export default function InvoicesPage() {
     return matchStatus && matchSearch;
   });
 
+  if (!mounted) return null;
   if (!isLoggedIn()) return null;
 
   return (

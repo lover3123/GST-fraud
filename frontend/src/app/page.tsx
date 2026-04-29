@@ -12,6 +12,11 @@ export default function HomePage() {
   const router = useRouter();
   const [stats, setStats] = useState<null | Record<string, number>>(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -35,6 +40,7 @@ export default function HomePage() {
     loadStats();
   }, [loadStats]);
 
+  if (!mounted) return null;
   if (!isLoggedIn()) return null;
 
   return (

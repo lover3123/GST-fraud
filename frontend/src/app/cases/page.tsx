@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isLoggedIn, getUser } from "@/lib/auth";
 import Navbar from "@/components/Navbar";
@@ -28,8 +28,15 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function CasesPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => { if (!isLoggedIn()) router.replace("/login"); }, [router]);
   const user = getUser();
+  if (!mounted) return null;
   if (!isLoggedIn()) return null;
 
   return (

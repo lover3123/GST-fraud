@@ -2,6 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { listApiKeys, createApiKey, revokeApiKey, ApiKeyRecord, CreatedApiKey } from "@/lib/apikeys";
+import { Eye, EyeSlash, ArrowLeft } from "@phosphor-icons/react";
+import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import { isLoggedIn } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState<ApiKeyRecord[]>([]);
@@ -10,7 +15,15 @@ export default function ApiKeysPage() {
   const [creating, setCreating] = useState(false);
   const [newlyCreated, setNewlyCreated] = useState<CreatedApiKey | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showKey, setShowKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (!isLoggedIn()) router.replace("/login");
+  }, [router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -33,6 +46,7 @@ export default function ApiKeysPage() {
     try {
       const created = await createApiKey(newName.trim());
       setNewlyCreated(created);
+      setShowKey(false);
       setNewName("");
       await load();
     } catch {
@@ -58,11 +72,15 @@ export default function ApiKeysPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+  if (!mounted) return null;
+  if (!isLoggedIn()) return null;
 
-        {/* Header */}
+  return (
+    <div className="flex min-h-screen bg-[#060b14]">
+      <Navbar />
+      <main className="flex-1 overflow-y-auto bg-slate-950 text-white p-8">
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Header */}
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-500 mb-1">Developer Access</p>
           <h1 className="text-2xl font-bold text-white">API Key Management</h1>
@@ -83,8 +101,15 @@ export default function ApiKeysPage() {
           <div className="rounded-xl border border-emerald-700 bg-emerald-950/40 p-5 space-y-3">
             <p className="text-sm font-semibold text-emerald-400">✅ Key Created — Save it now! It will never be shown again.</p>
             <div className="flex items-center gap-3">
-              <code className="flex-1 rounded-lg bg-slate-900 border border-slate-700 px-4 py-3 text-xs font-mono text-white break-all">
-                {newlyCreated.full_key}
+              <code className="flex-1 flex justify-between items-center rounded-lg bg-slate-900 border border-slate-700 px-4 py-3 text-xs font-mono text-white break-all">
+                <span>{showKey ? newlyCreated.full_key : "•".repeat(40)}</span>
+                <button
+                  onClick={() => setShowKey(!showKey)}
+                  className="ml-4 text-slate-400 hover:text-white transition"
+                  title={showKey ? "Hide key" : "Show key"}
+                >
+                  {showKey ? <EyeSlash size={16} /> : <Eye size={16} />}
+                </button>
               </code>
               <button
                 onClick={() => handleCopy(newlyCreated.full_key)}
@@ -94,7 +119,7 @@ export default function ApiKeysPage() {
               </button>
             </div>
             <button
-              onClick={() => setNewlyCreated(null)}
+              onClick={() => { setNewlyCreated(null); setShowKey(false); }}
               className="text-xs text-slate-500 hover:text-slate-300 transition"
             >
               Dismiss
@@ -197,7 +222,8 @@ export default function ApiKeysPage() {
           </pre>
         </div>
 
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
